@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>91Live Player</title>
+    <script src="./jessibuca.js"></script>
+    <style>
+        .root {
+            display: flex;
+            place-content: center;
+            margin-top: 3rem;
+        }
+
+        .container-shell {
+            backdrop-filter: blur(5px);
+            background: hsla(0, 0%, 50%, 0.5);
+            padding: 20px;
+            width: 90%;
+            max-width: 800px;
+            position: relative;
+            border-radius: 5px;
+            box-shadow: 0 10px 20px;
+            margin: 0 auto;
+        }
+
+        .container-shell:before {
+            content: "jessibuca demo player";
+            position: absolute;
+            color: darkgray;
+            top: 4px;
+            left: 10px;
+            text-shadow: 1px 1px black;
+        }
+
+        #container {
+            background: rgba(13, 14, 27, 0.7);
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+            margin-bottom: 10px;
+        }
+
+        .input {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            color: white;
+            place-content: stretch;
+        }
+
+        .input input {
+            flex: 1 1 70%;
+            margin-right: 5px;
+        }
+
+        .input button {
+            flex: 1 1 25%;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .err {
+            position: absolute;
+            top: 40px;
+            left: 10px;
+            color: red;
+        }
+
+        .option {
+            position: absolute;
+            top: 4px;
+            right: 10px;
+            display: flex;
+            place-content: center;
+            font-size: 12px;
+        }
+
+        .option span {
+            color: white;
+        }
+
+        .page {
+            background: url('./bg.jpg');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: cover;
+        }
+
+        @media (max-width: 720px) {
+            #container {
+                width: auto;
+                height: auto;
+            }
+
+            .input button {
+                padding: 3px 8px;
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body class="page">
+<div class="root">
+    <div class="container-shell">
+        <div id="container"></div>
+        <div class="input">
+            <div>输入URL：</div>
+            <input
+                autocomplete="on"
+                id="playUrl"
+                value=""
+            />
+            <button id="play">播放</button>
+            <button id="pause" style="display: none">停止</button>
+        </div>
+        <div class="input" style="line-height: 30px">
+            <button id="destroy">销毁</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    var $player = document.getElementById('play');
+    var $pause = document.getElementById('pause');
+    var $playHref = document.getElementById('playUrl');
+    var $container = document.getElementById('container');
+    var $destroy = document.getElementById('destroy');
+
+    var showOperateBtns = true;
+    var forceNoOffscreen = true;
+    var jessibuca = null;
+	window.addEventListener('load', function() {
+		// 获取 `playUrl` 参数
+		const currentUrl = new URL(window.location.href);
+		const params = new URLSearchParams(currentUrl.search);
+		const autoPlayUrl = params.get('playUrl');
+
+		// 如果存在参数，则自动播放
+		if (autoPlayUrl) {
+			// 设置 `playUrl` 输入框的值
+			document.getElementById('playUrl').value = autoPlayUrl;
+
+			// 调用播放逻辑
+			document.getElementById('play').click();
+		}
+	});
+	
+    function create() {
+        jessibuca = null;
+        jessibuca = new Jessibuca({
+            container: $container,
+            videoBuffer: 0.2,
+            isResize: true,
+            text: "",
+            loadingText: "",
+            useMSE: false,
+            debug: true,
+            showBandwidth: showOperateBtns,
+            operateBtns: {
+                fullscreen: showOperateBtns,
+                screenshot: showOperateBtns,
+                play: showOperateBtns,
+                audio: true,
+                record: true
+            },
+            forceNoOffscreen: forceNoOffscreen,
+            isNotMute: false,
+            encodeType: "h264",
+            useWebFullScreen: true,
+        });
+
+        jessibuca.on('audioInfo', function (audioInfo) {
+            console.log('audioInfo', audioInfo);
+        });
+
+        jessibuca.on('videoInfo', function (videoInfo) {
+            console.log('videoInfo', videoInfo);
+        });
+        $player.style.display = 'inline-block';
+        $pause.style.display = 'none';
+        $destroy.style.display = 'none';
+    }
+
+    create();
+
+    $player.addEventListener('click', function () {
+        var href = $playHref.value;
+        if (href) {
+            jessibuca.play(href);
+            $player.style.display = 'none';
+            $pause.style.display = 'inline-block';
+            $destroy.style.display = 'inline-block';
+        }
+    }, false);
+
+    $pause.addEventListener('click', function () {
+        $player.style.display = 'inline-block';
+        $pause.style.display = 'none';
+        jessibuca.pause();
+    });
+
+    $destroy.addEventListener('click', function () {
+        if (jessibuca) {
+            jessibuca.destroy().then(() => {
+                create();
+            });
+        } else {
+            create();
+        }
+    });
+	window.addEventListener('resize', function() {
+  const container = document.getElementById('container');
+  container.style.height = window.innerHeight * 0.8 + 'px'; // 设置为窗口高度的 80%
+});
+	
+</script>
+</body>
+</html>
